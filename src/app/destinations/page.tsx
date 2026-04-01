@@ -18,19 +18,161 @@ const difficultyColors = {
   challenging: { bg: "#3a1a1a", text: "#f87171" },
 };
 
+interface DestinationWithMatch extends Destination {
+  matchPct: number;
+}
+
+function FeaturedDestinationCard({
+  destination,
+  isSelected,
+  onToggle,
+  matchPct,
+}: {
+  destination: DestinationWithMatch;
+  isSelected: boolean;
+  onToggle: () => void;
+  matchPct: number;
+}) {
+  const [imgError, setImgError] = useState(false);
+  const diff = difficultyColors[destination.difficulty];
+
+  return (
+    <div
+      className="sm:col-span-2 lg:col-span-2 rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 flex flex-col lg:flex-row"
+      style={{
+        background: "#141418",
+        border: isSelected ? "2px solid #c9a84c" : "2px solid rgba(201,168,76,0.3)",
+        boxShadow: isSelected
+          ? "0 0 40px rgba(201,168,76,0.2)"
+          : "0 0 20px rgba(201,168,76,0.08)",
+      }}
+      onClick={onToggle}
+    >
+      {/* Image — left 60% on large screens */}
+      <div className="relative h-80 lg:h-auto lg:w-[60%] overflow-hidden bg-stone-800 flex-shrink-0">
+        {!imgError ? (
+          <Image
+            src={destination.image}
+            alt={destination.name}
+            fill
+            className="object-cover transition-transform duration-700 hover:scale-105"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-stone-800 text-stone-600 text-4xl">
+            🏔️
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent lg:bg-gradient-to-r lg:from-transparent lg:to-black/40" />
+
+        {/* Perfect Match badge */}
+        <div
+          className="absolute top-4 left-4 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5"
+          style={{ background: "#c9a84c", color: "#000" }}
+        >
+          ✦ Perfect Match
+        </div>
+
+        {/* Match % */}
+        <div
+          className="absolute top-4 right-4 text-sm font-bold px-3 py-1.5 rounded-full"
+          style={{ background: "rgba(0,0,0,0.75)", color: "#c9a84c" }}
+        >
+          {matchPct}% match
+        </div>
+
+        {/* Selected overlay */}
+        {isSelected && (
+          <div
+            className="absolute bottom-4 right-4 w-9 h-9 rounded-full flex items-center justify-center"
+            style={{ background: "#c9a84c" }}
+          >
+            <svg width="14" height="11" viewBox="0 0 14 11" fill="none">
+              <path d="M1 5.5L5 9.5L13 1.5" stroke="black" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+        )}
+
+        {/* Region tag */}
+        <div className="absolute bottom-4 left-4 text-white/80 text-xs tracking-wide">
+          📍 {destination.region}
+        </div>
+      </div>
+
+      {/* Content — right 40% */}
+      <div className="p-6 lg:p-8 flex flex-col justify-between flex-1">
+        <div>
+          <div className="flex items-start justify-between gap-2 mb-3">
+            <div>
+              <h3
+                className="text-white text-2xl font-bold leading-tight"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                {destination.name}
+              </h3>
+              <p className="text-stone-400 text-sm mt-1">{destination.tagline}</p>
+            </div>
+            <div
+              className="text-xs px-2.5 py-1 rounded-full whitespace-nowrap flex-shrink-0"
+              style={{ background: diff.bg, color: diff.text }}
+            >
+              {destination.difficulty}
+            </div>
+          </div>
+
+          <p className="text-stone-400 text-sm leading-relaxed mb-5">
+            {destination.description}
+          </p>
+
+          {/* Highlights */}
+          <div className="space-y-2 mb-5">
+            {destination.highlights.slice(0, 3).map((h, i) => (
+              <div key={i} className="flex items-start gap-2 text-sm text-stone-400">
+                <span style={{ color: "#c9a84c" }} className="mt-0.5">✦</span>
+                <span>{h}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between pt-4 border-t border-stone-800">
+          <div className="text-xs text-stone-500">
+            ⏱ {destination.daysNeeded} day{destination.daysNeeded > 1 ? "s" : ""}
+            {destination.altitude && <span className="ml-2">🏔 {destination.altitude}</span>}
+          </div>
+          <div
+            className="text-xs px-4 py-2 rounded-full font-semibold transition-all"
+            style={{
+              background: isSelected ? "#c9a84c" : "rgba(201,168,76,0.1)",
+              color: isSelected ? "#000" : "#c9a84c",
+              border: "1px solid #c9a84c",
+            }}
+          >
+            {isSelected ? "✓ Selected" : "+ Add to Trip"}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DestinationCard({
   destination,
   isSelected,
   onToggle,
   rank,
+  matchPct,
 }: {
-  destination: Destination;
+  destination: DestinationWithMatch;
   isSelected: boolean;
   onToggle: () => void;
   rank: number;
+  matchPct: number;
 }) {
   const [imgError, setImgError] = useState(false);
   const diff = difficultyColors[destination.difficulty];
+  const isTopPick = rank >= 2 && rank <= 4;
 
   return (
     <div
@@ -43,7 +185,7 @@ function DestinationCard({
       onClick={onToggle}
     >
       {/* Image */}
-      <div className="relative h-56 overflow-hidden bg-stone-800">
+      <div className="relative h-48 overflow-hidden bg-stone-800">
         {!imgError ? (
           <Image
             src={destination.image}
@@ -67,10 +209,28 @@ function DestinationCard({
           #{rank}
         </div>
 
+        {/* Top Pick badge */}
+        {isTopPick && (
+          <div
+            className="absolute top-3 left-12 text-xs font-bold px-2.5 py-1 rounded-full"
+            style={{ background: "rgba(201,168,76,0.2)", color: "#c9a84c", border: "1px solid rgba(201,168,76,0.4)" }}
+          >
+            Top Pick
+          </div>
+        )}
+
+        {/* Match % badge */}
+        <div
+          className="absolute top-3 right-3 text-xs font-bold px-2.5 py-1 rounded-full"
+          style={{ background: "rgba(0,0,0,0.75)", color: "#c9a84c" }}
+        >
+          {matchPct}%
+        </div>
+
         {/* Selected overlay */}
         {isSelected && (
           <div
-            className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center"
+            className="absolute bottom-3 right-3 w-8 h-8 rounded-full flex items-center justify-center"
             style={{ background: "#c9a84c" }}
           >
             <svg width="14" height="11" viewBox="0 0 14 11" fill="none">
@@ -145,6 +305,8 @@ function DestinationsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  const name = searchParams.get("name") || "";
+
   const answers: QuizAnswers = {
     style: (searchParams.get("style") as QuizAnswers["style"]) || "culture",
     duration: (searchParams.get("duration") as QuizAnswers["duration"]) || "week",
@@ -153,6 +315,13 @@ function DestinationsContent() {
   };
 
   const ranked = scoreDestinations(destinations, answers);
+
+  // Attach match percentage: #1 = 98%, #12 = 62%, linear interpolation
+  const rankedWithMatch: DestinationWithMatch[] = ranked.map((d, i) => ({
+    ...d,
+    matchPct: Math.round(98 - (i / (ranked.length - 1)) * 36),
+  }));
+
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   function toggle(id: string) {
@@ -172,6 +341,11 @@ function DestinationsContent() {
     router.push(`/plan?${params.toString()}`);
   }
 
+  // Total days selected
+  const totalDaysSelected = rankedWithMatch
+    .filter((d) => selected.has(d.id))
+    .reduce((sum, d) => sum + d.daysNeeded, 0);
+
   const styleLabels: Record<string, string> = {
     adventure: "Adventure Seeker 🧗",
     culture: "Culture Explorer 🏛️",
@@ -185,6 +359,23 @@ function DestinationsContent() {
     mountains: "Mountains & Trekking ⛰️",
     beaches: "Desert & Coastal 🏜️",
   };
+
+  const stylePlain: Record<string, string> = {
+    adventure: "adventure",
+    culture: "culture",
+    nature: "nature",
+    relaxation: "relaxation",
+  };
+
+  const interestPlain: Record<string, string> = {
+    history: "Inca history",
+    jungle: "jungle & wildlife",
+    mountains: "mountains & trekking",
+    beaches: "desert & coastal wonders",
+  };
+
+  const featured = rankedWithMatch[0];
+  const rest = rankedWithMatch.slice(1);
 
   return (
     <div
@@ -204,7 +395,10 @@ function DestinationsContent() {
           <div className="flex items-center gap-4">
             {selected.size > 0 && (
               <span className="text-stone-400 text-sm">
-                {selected.size} destination{selected.size > 1 ? "s" : ""} selected
+                {selected.size} destination{selected.size > 1 ? "s" : ""} ·{" "}
+                <span style={{ color: "#c9a84c" }}>
+                  {totalDaysSelected} of {totalDaysSelected} days selected
+                </span>
               </span>
             )}
             <button
@@ -233,15 +427,24 @@ function DestinationsContent() {
             className="text-4xl md:text-5xl font-bold text-white mb-4"
             style={{ fontFamily: "var(--font-display)" }}
           >
-            Destinations Matched for You
+            {name
+              ? `Destinations curated for ${name}`
+              : "Destinations Matched for You"}
           </h1>
-          <p className="text-stone-400 max-w-xl mx-auto mb-6">
-            Based on your preferences, we ranked all 12 Peruvian destinations
-            especially for you. Select the ones that speak to your soul.
+          <p className="text-stone-400 max-w-xl mx-auto mb-2">
+            {name ? (
+              <>
+                As a <span style={{ color: "#c9a84c" }}>{stylePlain[answers.style]}</span> traveler
+                interested in <span style={{ color: "#c9a84c" }}>{interestPlain[answers.interest]}</span>,
+                these destinations were ranked especially for you.
+              </>
+            ) : (
+              "Based on your preferences, we ranked all 12 Peruvian destinations especially for you. Select the ones that speak to your soul."
+            )}
           </p>
 
           {/* Quiz summary tags */}
-          <div className="flex flex-wrap gap-2 justify-center">
+          <div className="flex flex-wrap gap-2 justify-center mt-4">
             <span className="text-xs px-3 py-1.5 rounded-full bg-stone-800 text-stone-300">
               {styleLabels[answers.style]}
             </span>
@@ -275,15 +478,27 @@ function DestinationsContent() {
           <span>Click any destination to select it for your trip. Select as many as you like — we&apos;ll build the perfect route.</span>
         </div>
 
-        {/* Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {ranked.map((dest, i) => (
+        {/* Grid — featured card spans 2 cols, then regular cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Featured first destination */}
+          {featured && (
+            <FeaturedDestinationCard
+              destination={featured}
+              isSelected={selected.has(featured.id)}
+              onToggle={() => toggle(featured.id)}
+              matchPct={featured.matchPct}
+            />
+          )}
+
+          {/* Rest of destinations */}
+          {rest.map((dest, i) => (
             <DestinationCard
               key={dest.id}
               destination={dest}
               isSelected={selected.has(dest.id)}
               onToggle={() => toggle(dest.id)}
-              rank={i + 1}
+              rank={i + 2}
+              matchPct={dest.matchPct}
             />
           ))}
         </div>
@@ -292,7 +507,8 @@ function DestinationsContent() {
         {selected.size > 0 && (
           <div className="mt-16 text-center">
             <p className="text-stone-400 text-sm mb-4">
-              You&apos;ve selected <strong className="text-white">{selected.size}</strong> destination{selected.size > 1 ? "s" : ""}. Ready to see your plan?
+              You&apos;ve selected <strong className="text-white">{selected.size}</strong> destination{selected.size > 1 ? "s" : ""}{" "}
+              (<strong style={{ color: "#c9a84c" }}>{totalDaysSelected} days</strong>). Ready to see your plan?
             </p>
             <button
               onClick={handleCreatePlan}

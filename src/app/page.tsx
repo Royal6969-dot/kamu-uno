@@ -36,6 +36,9 @@ const highlights = [
   { icon: "🎨", title: "Rainbow Mountain", desc: "Vinicunca Colors" },
 ];
 
+const marqueeItems =
+  "Machu Picchu · Rainbow Mountain · Amazon Rainforest · Lake Titicaca · Colca Canyon · Huacachina · Nazca Lines · Sacred Valley · ";
+
 export default function Home() {
   const [currentImage, setCurrentImage] = useState(0);
   const [fade, setFade] = useState(true);
@@ -110,7 +113,7 @@ export default function Home() {
             <br />
             <span className="text-gold-gradient">Soul of Peru</span>
           </h1>
-          <p className="text-white/75 text-lg md:text-xl max-w-2xl mx-auto mb-10 animate-fade-in-up animate-delay-200">
+          <p className="text-white/75 text-lg md:text-xl max-w-2xl mx-auto mb-8 animate-fade-in-up animate-delay-200">
             From ancient Inca citadels to Amazon jungles and desert oases —
             answer a few questions and we build your perfect Peruvian adventure.
             No account needed.
@@ -129,6 +132,27 @@ export default function Home() {
             >
               Explore Destinations
             </a>
+          </div>
+
+          {/* Stats bar */}
+          <div className="mt-8 animate-fade-in-up animate-delay-300">
+            <div
+              className="inline-flex flex-wrap gap-x-6 gap-y-2 justify-center px-6 py-3 rounded-full text-sm font-medium"
+              style={{
+                background: "rgba(0,0,0,0.45)",
+                backdropFilter: "blur(10px)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                color: "rgba(255,255,255,0.8)",
+              }}
+            >
+              <span>12 Destinations</span>
+              <span style={{ color: "#c9a84c" }}>·</span>
+              <span>No Registration</span>
+              <span style={{ color: "#c9a84c" }}>·</span>
+              <span>Free Planning</span>
+              <span style={{ color: "#c9a84c" }}>·</span>
+              <span>Instant Results</span>
+            </div>
           </div>
         </div>
 
@@ -157,6 +181,34 @@ export default function Home() {
           {heroImages[currentImage].label}
         </div>
       </section>
+
+      {/* Scrolling marquee ticker */}
+      <div
+        className="overflow-hidden py-3 border-y"
+        style={{
+          background: "#0d0d10",
+          borderColor: "rgba(201,168,76,0.2)",
+        }}
+      >
+        <div
+          className="whitespace-nowrap inline-block"
+          style={{
+            animation: "marquee 30s linear infinite",
+            color: "#c9a84c",
+            fontSize: "0.8rem",
+            letterSpacing: "0.12em",
+            fontWeight: 500,
+          }}
+        >
+          {marqueeItems.repeat(4)}
+        </div>
+        <style>{`
+          @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+        `}</style>
+      </div>
 
       {/* How It Works */}
       <section id="how-it-works" className="py-24 px-6 bg-stone-950">

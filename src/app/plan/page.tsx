@@ -7,7 +7,21 @@ import Link from "next/link";
 import { destinations, getDurationLabel, type QuizAnswers } from "@/lib/data";
 import { generatePlan, type PlanDay } from "@/lib/planGenerator";
 
-function DayCard({ day, isTravel }: { day: PlanDay; isTravel?: boolean }) {
+const clusterColors: Record<string, string> = {
+  lima: "#c9a84c",
+  cusco: "#8b5cf6",
+  south: "#c45a3a",
+  amazon: "#22c55e",
+  north: "#3b82f6",
+};
+
+function DayCard({ day, isTravel, cluster }: { day: PlanDay; isTravel?: boolean; cluster?: string }) {
+  const borderColor = isTravel
+    ? "#2a2a3a"
+    : cluster
+    ? clusterColors[cluster] ?? "#c9a84c"
+    : "#c9a84c";
+
   return (
     <div
       className="flex gap-6"
@@ -19,8 +33,8 @@ function DayCard({ day, isTravel }: { day: PlanDay; isTravel?: boolean }) {
           className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
           style={{
             background: isTravel ? "#1a1a2a" : "rgba(201,168,76,0.15)",
-            border: isTravel ? "2px solid #2a2a3a" : "2px solid #c9a84c",
-            color: isTravel ? "#555" : "#c9a84c",
+            border: isTravel ? "2px solid #2a2a3a" : `2px solid ${borderColor}`,
+            color: isTravel ? "#555" : borderColor,
           }}
         >
           {day.day}
@@ -37,13 +51,16 @@ function DayCard({ day, isTravel }: { day: PlanDay; isTravel?: boolean }) {
         style={{
           background: isTravel ? "#0e0e16" : "#141418",
           border: `1px solid ${isTravel ? "#1a1a2a" : "#1e1e26"}`,
+          borderLeft: isTravel
+            ? "3px dashed #2a2a3a"
+            : `3px solid ${borderColor}`,
         }}
       >
         <div className="flex items-start justify-between gap-4 mb-3">
           <div>
             <p
               className="text-xs uppercase tracking-widest mb-1"
-              style={{ color: isTravel ? "#555" : "#c9a84c", letterSpacing: "0.2em" }}
+              style={{ color: isTravel ? "#555" : borderColor, letterSpacing: "0.2em" }}
             >
               {isTravel ? "✈️ Travel Day" : `📍 ${day.location}`}
             </p>
@@ -103,6 +120,8 @@ function DayCard({ day, isTravel }: { day: PlanDay; isTravel?: boolean }) {
 function PlanContent() {
   const searchParams = useSearchParams();
 
+  const name = searchParams.get("name") || "";
+
   const answers: QuizAnswers = {
     style: (searchParams.get("style") as QuizAnswers["style"]) || "culture",
     duration: (searchParams.get("duration") as QuizAnswers["duration"]) || "week",
@@ -142,6 +161,26 @@ function PlanContent() {
 
   const plan = generatePlan(selectedDestinations, answers);
 
+  // Build a cluster map for day cards: location name → geoCluster
+  const locationClusterMap: Record<string, string> = {};
+  for (const dest of selectedDestinations) {
+    locationClusterMap[dest.name] = dest.geoCluster;
+  }
+
+  function getDayCluster(day: PlanDay): string | undefined {
+    return locationClusterMap[day.location];
+  }
+
+  const styleDisplay: Record<string, string> = {
+    adventure: "adventure",
+    culture: "culture",
+    nature: "nature",
+    relaxation: "relaxation",
+  };
+
+  // Route strip: sorted destinations for journey display
+  const sortedDests = [...selectedDestinations].sort((a, b) => a.geoOrder - b.geoOrder);
+
   return (
     <div
       className="min-h-screen"
@@ -164,6 +203,7 @@ function PlanContent() {
                 duration: answers.duration,
                 group: answers.group,
                 interest: answers.interest,
+                ...(name ? { name } : {}),
               }).toString()}`}
               className="text-sm text-stone-400 hover:text-white transition-colors px-4 py-2"
             >
@@ -199,7 +239,9 @@ function PlanContent() {
             className="text-4xl md:text-5xl font-bold text-white mb-3"
             style={{ fontFamily: "var(--font-display)" }}
           >
-            {plan.totalDays}-Day Peru Adventure
+            {name
+              ? `${name}'s ${plan.totalDays}-Day Peru Adventure`
+              : `${plan.totalDays}-Day Peru Adventure`}
           </h1>
           <p className="text-white/70 max-w-2xl text-base">{plan.summary}</p>
         </div>
@@ -207,7 +249,7 @@ function PlanContent() {
 
       <div className="max-w-5xl mx-auto px-6 py-12">
         {/* Summary cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-14">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
             { icon: "📅", label: "Duration", value: getDurationLabel(answers.duration) },
             { icon: "📍", label: "Destinations", value: `${selectedDestinations.length} Places` },
@@ -238,6 +280,65 @@ function PlanContent() {
               <div className="text-white font-semibold">{item.value}</div>
             </div>
           ))}
+        </div>
+
+        {/* Personalized intro — only if name provided */}
+        {name && (
+          <div
+            className="p-6 rounded-2xl mb-10"
+            style={{ background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.2)" }}
+          >
+            <p className="text-white/85 text-base leading-relaxed">
+              Hi <strong style={{ color: "#c9a84c" }}>{name}</strong>, here&apos;s what we&apos;ve crafted
+              for you as a{" "}
+              <span style={{ color: "#c9a84c" }}>{styleDisplay[answers.style]}</span> traveler —
+              a {plan.totalDays}-day journey across {sortedDests.length} extraordinary destination
+              {sortedDests.length > 1 ? "s" : ""}, tailored to give you the best of Peru.
+            </p>
+          </div>
+        )}
+
+        {/* Your Journey route strip */}
+        <div className="mb-14">
+          <h2
+            className="text-xl font-bold text-white mb-5"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            Your Journey
+          </h2>
+          <div className="flex flex-wrap items-center gap-2 p-4 rounded-2xl overflow-x-auto" style={{ background: "#141418", border: "1px solid #1e1e26" }}>
+            {sortedDests.map((dest, i) => (
+              <div key={dest.id} className="flex items-center gap-2">
+                <div className="flex flex-col items-center gap-1">
+                  <div
+                    className="px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap"
+                    style={{
+                      background: `${clusterColors[dest.geoCluster] ?? "#c9a84c"}22`,
+                      color: clusterColors[dest.geoCluster] ?? "#c9a84c",
+                      border: `1px solid ${clusterColors[dest.geoCluster] ?? "#c9a84c"}55`,
+                    }}
+                  >
+                    {dest.name}
+                  </div>
+                  <div className="text-stone-600 text-xs capitalize">{dest.geoCluster}</div>
+                </div>
+                {i < sortedDests.length - 1 && (
+                  <span className="text-stone-600 text-lg flex-shrink-0">→</span>
+                )}
+              </div>
+            ))}
+          </div>
+          {/* Cluster legend */}
+          <div className="flex flex-wrap gap-3 mt-3">
+            {Object.entries(clusterColors)
+              .filter(([cluster]) => sortedDests.some((d) => d.geoCluster === cluster))
+              .map(([cluster, color]) => (
+                <div key={cluster} className="flex items-center gap-1.5 text-xs text-stone-500">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
+                  <span className="capitalize">{cluster}</span>
+                </div>
+              ))}
+          </div>
         </div>
 
         {/* Top highlights */}
@@ -282,6 +383,10 @@ function PlanContent() {
                   className="object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                <div
+                  className="absolute top-2 right-2 w-2 h-2 rounded-full"
+                  style={{ background: clusterColors[dest.geoCluster] ?? "#c9a84c" }}
+                />
                 <div className="absolute bottom-2 left-3 text-white text-xs font-semibold">
                   {dest.name}
                 </div>
@@ -300,7 +405,12 @@ function PlanContent() {
           </h2>
           <div className="space-y-0">
             {plan.days.map((day) => (
-              <DayCard key={day.day} day={day} isTravel={day.isTravel} />
+              <DayCard
+                key={day.day}
+                day={day}
+                isTravel={day.isTravel}
+                cluster={getDayCluster(day)}
+              />
             ))}
           </div>
         </div>
@@ -327,6 +437,7 @@ function PlanContent() {
                 duration: answers.duration,
                 group: answers.group,
                 interest: answers.interest,
+                ...(name ? { name } : {}),
               }).toString()}`}
               className="px-8 py-3 rounded-full font-semibold text-sm transition-all"
               style={{ border: "1px solid #c9a84c", color: "#c9a84c" }}
